@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>健身记录</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand"><span class="brand-mark"></span>健身记录<span class="brand-sub">v1.0</span></div>
+    <nav class="side-nav">
+      <a href="#dashboard" class="nav-item active" data-view="dashboard">今日看板</a>
+      <a href="#training" class="nav-item" data-view="training">记录训练</a>
+      <a href="#diet" class="nav-item" data-view="diet">记录饮食</a>
+      <a href="#weight" class="nav-item" data-view="weight">记录体重</a>
+      <a href="#goals" class="nav-item" data-view="goals">目标设定</a>
+      <a href="#reports" class="nav-item" data-view="reports">历史报表</a>
+      <a href="#settings" class="nav-item" data-view="settings">设置</a>
+    </nav>
+    <div class="side-note">数据仅存本机 · 无账号 · 免费</div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div class="page-title" id="pageTitle">今日看板</div>
+      <div class="prd-tag" id="prdTag">PRD: F2</div>
+    </header>
+    <main id="view"></main>
+  </div>
+
+  <nav class="tabbar">
+    <a href="#dashboard" class="tab active" data-view="dashboard">看板</a>
+    <a href="#training" class="tab" data-view="training">训练</a>
+    <a href="#diet" class="tab" data-view="diet">饮食</a>
+    <a href="#reports" class="tab" data-view="reports">报表</a>
+    <a href="#settings" class="tab" data-view="settings">设置</a>
+  </nav>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<div id="modal" class="modal hidden">
+  <div class="modal-box">
+    <div class="modal-title" id="modalTitle">确认</div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="modalCancel">取消</button>
+      <button class="btn btn-primary" id="modalOk">确认</button>
+    </div>
+  </div>
+</div>
+
+<script src="data.js"></script>
+<script src="core.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
