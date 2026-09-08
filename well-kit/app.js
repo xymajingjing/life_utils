@@ -486,7 +486,7 @@
       (editing ? ' <button class="btn btn-ghost btn-sm" onclick="FR.cancelEdit()">取消编辑</button>' : '') +
       '</div>' +
       '</div>' +
-      '<div class="card" style="max-width:640px;margin-top:14px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><h3 style="margin:0">今日饮食明细</h3><div style="display:flex;gap:6px"><button class="btn btn-ghost btn-sm" onclick="FR.exportDiet()">导出 JSON</button><button class="btn btn-ghost btn-sm" onclick="FR.importDiet()">导入 JSON</button></div></div>' + todayList + '<div class="hint" style="margin-top:8px">导出全部饮食记录到文件，换设备/浏览器时导入可迁移数据（按 id 合并，不覆盖现有记录）。</div></div>';
+      '<div class="card" style="max-width:640px;margin-top:14px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><h3 style="margin:0">今日饮食明细</h3><div style="display:flex;gap:6px"><button class="btn btn-ghost btn-sm" onclick="FR.exportDiet()">导出 JSON</button><button class="btn btn-ghost btn-sm" onclick="FR.importDiet()">导入 JSON</button><button class="btn btn-ghost btn-sm" onclick="FR.importDietText()">粘贴 JSON</button></div></div>' + todayList + '<div class="hint" style="margin-top:8px">导出全部饮食记录到文件或粘贴 JSON 数组导入，换设备/浏览器时导入可迁移数据（按 id 合并，不覆盖现有记录）。</div></div>';
   }
   /* 饮食记录导入导出 */
   function exportDiet() {
@@ -502,6 +502,26 @@
     URL.revokeObjectURL(url);
     toast('已导出 ' + state.diet.length + ' 条饮食记录');
   }
+  function mergeDietArray(arr) {
+    var existingIds = {};
+    state.diet.forEach(function (r) { existingIds[r.id] = true; });
+    var added = 0, skipped = 0;
+    arr.forEach(function (r) {
+      if (!r || !r.id || !r.date || !r.name) { skipped++; return; }
+      if (existingIds[r.id]) { skipped++; return; }
+      state.diet.push({
+        id: r.id, date: r.date, meal: r.meal || '加餐', name: r.name,
+        qty: r.qty || 1, unit: r.unit || '份', cal: r.cal || 0,
+        protein: r.protein == null ? null : r.protein,
+        carbs: r.carbs == null ? null : r.carbs,
+        fat: r.fat == null ? null : r.fat
+      });
+      existingIds[r.id] = true;
+      added++;
+    });
+    save();
+    return { added: added, skipped: skipped };
+  }
   function importDiet() {
     var input = document.createElement('input');
     input.type = 'file';
@@ -514,24 +534,8 @@
         try {
           var arr = JSON.parse(reader.result);
           if (!Array.isArray(arr)) { toast('导入失败：文件应为饮食记录数组'); return; }
-          var existingIds = {};
-          state.diet.forEach(function (r) { existingIds[r.id] = true; });
-          var added = 0, skipped = 0;
-          arr.forEach(function (r) {
-            if (!r || !r.id || !r.date || !r.name) { skipped++; return; }
-            if (existingIds[r.id]) { skipped++; return; }
-            state.diet.push({
-              id: r.id, date: r.date, meal: r.meal || '加餐', name: r.name,
-              qty: r.qty || 1, unit: r.unit || '份', cal: r.cal || 0,
-              protein: r.protein == null ? null : r.protein,
-              carbs: r.carbs == null ? null : r.carbs,
-              fat: r.fat == null ? null : r.fat
-            });
-            existingIds[r.id] = true;
-            added++;
-          });
-          save();
-          toast('已导入 ' + added + ' 条（跳过 ' + skipped + ' 条重复/无效）');
+          var r = mergeDietArray(arr);
+          toast('已导入 ' + r.added + ' 条（跳过 ' + r.skipped + ' 条重复/无效）');
           go('diet');
         } catch (e) {
           toast('导入失败：JSON 解析错误');
@@ -540,6 +544,24 @@
       reader.readAsText(file);
     };
     input.click();
+  }
+  function importDietText() {
+    confirmModal('粘贴导入饮食记录',
+      '<textarea id="diet-paste-text" class="input" style="width:100%;min-height:200px;font-family:monospace;font-size:13px;resize:vertical" placeholder=\'[{"id":"x1","date":"2026-09-08","meal":"早餐","name":"燕麦","qty":40,"unit":"g","cal":150,"protein":5,"carbs":27,"fat":3}]\'></textarea>' +
+      '<div class="hint" style="margin-top:8px">粘贴饮食记录 JSON 数组，按 id 合并，不覆盖已有记录。格式与"导出 JSON"一致。</div>',
+      function () {
+        var raw = (document.getElementById('diet-paste-text') || {}).value || '';
+        if (!raw.trim()) { toast('导入失败：文本框为空'); return; }
+        try {
+          var arr = JSON.parse(raw);
+          if (!Array.isArray(arr)) { toast('导入失败：应为饮食记录数组'); return; }
+          var r = mergeDietArray(arr);
+          toast('已导入 ' + r.added + ' 条（跳过 ' + r.skipped + ' 条重复/无效）');
+          go('diet');
+        } catch (e) {
+          toast('导入失败：JSON 解析错误');
+        }
+      }, '导入');
   }
   function setMeal(el) { _meal = el.dataset.meal; document.querySelectorAll('#meal-tabs .tab-pill').forEach(function (b) { b.classList.toggle('active', b === el); }); }
   /* 合并食物库：自定义库 + 预置库，同名时自定义覆盖预置 */
@@ -1011,7 +1033,7 @@
     setTrSpan: setTrSpan,
     setMeal: setMeal, searchFood: searchFood, pick: pick, saveDiet: saveDiet, customFood: customFood,
     delCustomFood: delCustomFood,
-    exportDiet: exportDiet, importDiet: importDiet,
+    exportDiet: exportDiet, importDiet: importDiet, importDietText: importDietText,
     saveWeight: saveWeight, setWeightSpan: setWeightSpan,
     setGoalType: setGoalType, saveGoal: saveGoal, resetGoal: resetGoal,
     setDim: setDim,
