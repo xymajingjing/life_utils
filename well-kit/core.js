@@ -66,6 +66,23 @@
     return food.protein == null || food.carbs == null || food.fat == null;
   }
 
+  /* ===== 饮食记录导入字段校验 ===== */
+  var DIET_FIELDS = ['id', 'date', 'meal', 'name', 'qty', 'unit', 'cal', 'protein', 'carbs', 'fat'];
+  var DIET_FIELD_SUGGEST = { carb: 'carbs', carbohydrate: 'carbs', kcal: 'cal', calories: 'cal', protien: 'protein', fatt: 'fat', quantity: 'qty' };
+  /* 逐条检测未知字段名，返回问题数组 {index, name, field, suggest}（空数组=全部合法）。仅校验字段名，不校验值。 */
+  function dietFieldProblems(arr) {
+    var problems = [];
+    (arr || []).forEach(function (r, i) {
+      if (!r || typeof r !== 'object') return;
+      Object.keys(r).forEach(function (k) {
+        if (DIET_FIELDS.indexOf(k) < 0) {
+          problems.push({ index: i + 1, name: r.name || r.id || '?', field: k, suggest: DIET_FIELD_SUGGEST[k] || null });
+        }
+      });
+    });
+    return problems;
+  }
+
   /* ===== 日期工具（本地时区，YYYY-MM-DD）===== */
   function dateStr(d) {
     return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
@@ -156,6 +173,7 @@
     foodCalories: foodCalories,
     foodMacros: foodMacros,
     hasMissingMacro: hasMissingMacro,
+    dietFieldProblems: dietFieldProblems,
     dateStr: dateStr,
     parseDate: parseDate,
     addDays: addDays,

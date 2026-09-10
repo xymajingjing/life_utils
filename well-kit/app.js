@@ -502,6 +502,17 @@
     URL.revokeObjectURL(url);
     toast('已导出 ' + state.diet.length + ' 条饮食记录');
   }
+  /* 导入字段名校验：发现未知字段名 → 弹窗提示，本次导入整体取消 */
+  function dietImportBlocked(problems) {
+    var lines = problems.slice(0, 8).map(function (p) {
+      return '第' + p.index + '条「' + esc(p.name) + '」未知字段 "' + esc(p.field) + '"' + (p.suggest ? '，应为 "' + esc(p.suggest) + '"' : '');
+    });
+    var shown = lines.join('<br>') + (problems.length > 8 ? '<br>…等共 ' + problems.length + ' 处' : '');
+    confirmModal('导入已取消：字段名无法识别',
+      '<div style="font-size:13px;line-height:1.8">检测到以下未知字段名，<b>本次导入未写入任何记录</b>：<br>' + shown + '</div>' +
+      '<div class="hint" style="margin-top:8px">合法字段：id, date, meal, name, qty, unit, cal, protein, carbs, fat。请修正字段名后重新导入。</div>',
+      null, '知道了');
+  }
   function mergeDietArray(arr) {
     var existingIds = {};
     state.diet.forEach(function (r) { existingIds[r.id] = true; });
@@ -534,6 +545,8 @@
         try {
           var arr = JSON.parse(reader.result);
           if (!Array.isArray(arr)) { toast('导入失败：文件应为饮食记录数组'); return; }
+          var problems = C.dietFieldProblems(arr);
+          if (problems.length) { dietImportBlocked(problems); return; }
           var r = mergeDietArray(arr);
           toast('已导入 ' + r.added + ' 条（跳过 ' + r.skipped + ' 条重复/无效）');
           go('diet');
@@ -555,6 +568,8 @@
         try {
           var arr = JSON.parse(raw);
           if (!Array.isArray(arr)) { toast('导入失败：应为饮食记录数组'); return; }
+          var problems = C.dietFieldProblems(arr);
+          if (problems.length) { dietImportBlocked(problems); return; }
           var r = mergeDietArray(arr);
           toast('已导入 ' + r.added + ' 条（跳过 ' + r.skipped + ' 条重复/无效）');
           go('diet');
